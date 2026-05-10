@@ -31,7 +31,7 @@
 
 
 ## Autor
-- **Jiří** (jbasta74) - [GitHub Profil](https://github.com/jbasta74)
+- **Jiří Bašta** (jbasta74) - [GitHub Profil](https://github.com/jbasta74)
 
 ---
 © 2026 - AdminDiskApp
