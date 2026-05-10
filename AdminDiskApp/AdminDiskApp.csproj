@@ -18,7 +18,15 @@
 
 		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
 	</PropertyGroup>
-
+	<PropertyGroup>
+		<Version>1.0.0</Version>
+		<Authors>Jiří Bašta</Authors>
+		<Description>Automatický úklid vybraných adresářů pro stanice i servery</Description>
+		<ApplicationIcon>app_icon.ico</ApplicationIcon>
+	</PropertyGroup>
+	<ItemGroup>
+	  <Resource Include="app_icon.ico" />
+	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 	</ItemGroup>

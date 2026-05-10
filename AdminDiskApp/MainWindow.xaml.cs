@@ -18,10 +18,10 @@ public partial class MainWindow : Window
         {
             _notifyIcon.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!);
         }
-        catch { /* Failback if icon fails */ }
+        catch { _notifyIcon.Icon = System.Drawing.SystemIcons.Shield; }
 
         _notifyIcon.Visible = true;
-        _notifyIcon.Text = "AdminDiskApp";
+        _notifyIcon.Text = "AdminDiskApp 2026";
         _notifyIcon.DoubleClick += (s, e) => ShowWindow();
 
         // Menu pro Tray ikonu

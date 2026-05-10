@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Security.Principal;
+using System.Windows;
 
 using AdminDiskApp.Models;
 using AdminDiskApp.Services;
@@ -150,7 +151,26 @@ public partial class MainViewModel : ObservableObject
             MessageBox.Show("Soubor s logy zatím neexistuje.", "Informace");
         }
     }
+    [RelayCommand]
+    private void Exit()
+    {
+        // Musíme použít Shutdown, protože OnClosing v MainWindow 
+        // by aplikaci jen schovalo do Traye.
+        Application.Current.Shutdown();
+    }
 
+    [RelayCommand]
+    private void ShowAbout()
+    {
+        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        var message = $"AdminDiskApp\n" +
+                      $"Verze: {version?.Major}.{version?.Minor}.{version?.Build}\n\n" +
+                      $"Nástroj pro automatizovanou údržbu disků a záloh.\n" +
+                      $"© 2026 - Jiří\n\n" +
+                      $"Běží na .NET 10.0 (Native Single-File Mode)";
+
+        MessageBox.Show(message, "O aplikaci", (MessageBoxButtons)MessageBoxButton.OK, (MessageBoxIcon)MessageBoxImage.Information);
+    }
     private async Task StartBackgroundSchedulerAsync()
     {
         using PeriodicTimer timer = new(TimeSpan.FromMinutes(1));
