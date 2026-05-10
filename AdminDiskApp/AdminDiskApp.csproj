@@ -30,4 +30,7 @@
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 	</ItemGroup>
+	<ItemGroup>
+	  <None Include=".github\workflows\release.yml" />
+	</ItemGroup>
 </Project>
