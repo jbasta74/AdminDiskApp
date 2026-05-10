@@ -133,8 +133,9 @@ public partial class MainViewModel : ObservableObject
         try
         {
             string exePath = Environment.ProcessPath!;
+            string exeDir = AppDomain.CurrentDomain.BaseDirectory;
             // Vytvoření úlohy v Plánovači úloh Windows s nejvyšším oprávněním
-            string command = $"/Create /TN \"AdminDiskApp_Cleanup\" /TR \"'{exePath}' --auto\" /SC DAILY /ST {ScheduledTime} /RL HIGHEST /F";
+            string command = $"/Create /TN \"AdminDiskApp_Cleanup\" /TR \"\\\"{exePath}\\\" --auto\" /SC DAILY /ST {ScheduledTime} /RL HIGHEST /F";
 
             Process.Start(new ProcessStartInfo("schtasks.exe", command)
             {
