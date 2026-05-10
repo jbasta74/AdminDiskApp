@@ -27,7 +27,8 @@
 - **Logování:** Implementována rotace `cleanup.log` -> `cleanup.log.old`.
 
 ## Náhled aplikace
-*(Zde můžete v budoucnu vložit screenshot aplikace)*
+<img width="936" height="673" alt="image" src="https://github.com/user-attachments/assets/07030ca6-f9d4-46d7-ad44-59d5765292d4" />
+
 
 ## Autor
 - **Jiří** (jbasta74) - [GitHub Profil](https://github.com/jbasta74)
