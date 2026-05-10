@@ -76,17 +76,29 @@ public partial class MainViewModel : ObservableObject
     {
         var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}";
 
-        // Aktualizace UI (vlastnost svázaná s TextBoxem)
+        // Zápis do UI okna
         LogOutput += logEntry + Environment.NewLine;
 
-        // Fyzický zápis na disk
+        // Log Rotation logika
         try
         {
+            var fileInfo = new FileInfo(LogFileName);
+
+            // Pokud soubor existuje a má víc než 1 MB (1024 * 1024 bajtů)
+            if (fileInfo.Exists && fileInfo.Length > 1 * 1024 * 1024)
+            {
+                string backupPath = LogFileName + ".old";
+
+                // Moderní .NET 10 způsob: Přesuneme a rovnou přepíšeme starou zálohu
+                File.Move(LogFileName, backupPath, overwrite: true);
+            }
+
+            // Zapíšeme nový řádek (pokud soubor po rotaci neexistuje, automaticky se vytvoří)
             File.AppendAllText(LogFileName, logEntry + Environment.NewLine);
         }
         catch
         {
-            // V produkci lze ošetřit např. plný disk, zde tichá chyba
+            // Tichá chyba - nechceme, aby problém se zápisem logu shodil celý úklid
         }
     }
 
