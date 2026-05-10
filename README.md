@@ -4,7 +4,7 @@
 ![.NET Version](https://img.shields.io/badge/.NET-10.0-blueviolet)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
 
-**AdminDiskApp** je lehký, ale výkonný nástroj pro automatizovanou údržbu disků a čištění starých souborů (záloh, logů, tempů) na Windows serverech. Byl navržen s důrazem na stabilitu, minimální nároky na systém a snadnou přenositelnost.
+**AdminDiskApp** je lehký, ale výkonný nástroj pro automatizovanou údržbu disků a čištění starých souborů (záloh, logů, tempů) na Windows stanicích a serverech. Byl navržen s důrazem na stabilitu, minimální nároky na systém a snadnou přenositelnost.
 
 ## Hlavní funkce
 - ✅ **Automatizované čištění:** Možnost nastavit konkrétní čas (např. 03:00) pro každodenní úklid.
