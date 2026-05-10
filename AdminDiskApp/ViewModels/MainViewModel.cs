@@ -1,8 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Security.Principal;
-using System.Windows;
-
 
 using AdminDiskApp.Models;
 using AdminDiskApp.Services;
@@ -11,6 +10,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 using Application = System.Windows.Application;
+using MessageBox = System.Windows.Forms.MessageBox;
 
 namespace AdminDiskApp.ViewModels;
 
@@ -18,6 +18,7 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly CleanupService _cleanupService = new();
     private readonly ConfigService _configService = new();
+    private const string LogFileName = "cleanup.log";
 
     [ObservableProperty] private ObservableCollection<CleanupTask> _tasks = [];
     [ObservableProperty] private string _logOutput = string.Empty;
@@ -26,21 +27,67 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel()
     {
+        // Načtení konfigurace a historie logů
         _ = LoadDataAsync();
+
+        // Spuštění vnitřního časovače pro běh v Trayi
         _ = StartBackgroundSchedulerAsync();
 
-        // Kontrola, zda jsme spuštěni z Task Scheduleru
+        // Pokud je aplikace spuštěna systémem s parametrem --auto
         if (Environment.GetCommandLineArgs().Contains("--auto"))
         {
             _ = RunAutoAndCloseAsync();
         }
     }
 
+    /// <summary>
+    /// Načte seznam úloh z JSONu a historii posledních zpráv z logu.
+    /// </summary>
     private async Task LoadDataAsync()
     {
+        // 1. Načtení úloh
         var loaded = await _configService.LoadTasksAsync();
         Tasks = new ObservableCollection<CleanupTask>(loaded);
-        LogOutput += $"[{DateTime.Now:HH:mm:ss}] Aplikace připravena.\n";
+
+        // 2. Načtení historie logů (posledních 100 řádků pro přehled)
+        if (File.Exists(LogFileName))
+        {
+            try
+            {
+                var lines = await File.ReadAllLinesAsync(LogFileName);
+                LogOutput = string.Join(Environment.NewLine, lines.TakeLast(100)) + Environment.NewLine;
+                AppendLog("--- APLIKACE SPUŠTĚNA ---");
+            }
+            catch
+            {
+                AppendLog("Nepodařilo se načíst historii logů z disku.");
+            }
+        }
+        else
+        {
+            AppendLog("Aplikace připravena.");
+        }
+    }
+
+    /// <summary>
+    /// Zapíše zprávu do UI okna a zároveň ji připojí do souboru na disku.
+    /// </summary>
+    private void AppendLog(string message)
+    {
+        var logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}";
+
+        // Aktualizace UI (vlastnost svázaná s TextBoxem)
+        LogOutput += logEntry + Environment.NewLine;
+
+        // Fyzický zápis na disk
+        try
+        {
+            File.AppendAllText(LogFileName, logEntry + Environment.NewLine);
+        }
+        catch
+        {
+            // V produkci lze ošetřit např. plný disk, zde tichá chyba
+        }
     }
 
     [RelayCommand]
@@ -52,6 +99,7 @@ public partial class MainViewModel : ObservableObject
             var newTask = new CleanupTask(dialog.FolderName);
             Tasks.Add(newTask);
             await _configService.SaveTasksAsync(Tasks);
+            AppendLog($"➕ Přidán adresář: {dialog.FolderName}");
         }
     }
 
@@ -61,6 +109,7 @@ public partial class MainViewModel : ObservableObject
         if (task == null) return;
         Tasks.Remove(task);
         await _configService.SaveTasksAsync(Tasks);
+        AppendLog($"➖ Odebrán adresář: {task.FolderPath}");
     }
 
     [RelayCommand]
@@ -72,11 +121,34 @@ public partial class MainViewModel : ObservableObject
         try
         {
             string exePath = Environment.ProcessPath!;
+            // Vytvoření úlohy v Plánovači úloh Windows s nejvyšším oprávněním
             string command = $"/Create /TN \"AdminDiskApp_Cleanup\" /TR \"'{exePath}' --auto\" /SC DAILY /ST {ScheduledTime} /RL HIGHEST /F";
-            Process.Start(new ProcessStartInfo("schtasks.exe", command) { UseShellExecute = true, Verb = "runas" });
-            LogOutput += $"✅ Úloha zaregistrována do Windows na {ScheduledTime}.\n";
+
+            Process.Start(new ProcessStartInfo("schtasks.exe", command)
+            {
+                UseShellExecute = true,
+                Verb = "runas"
+            });
+
+            AppendLog($"✅ Úloha zaregistrována do systému na {ScheduledTime}.");
         }
-        catch (Exception ex) { LogOutput += $"❌ Chyba registrace: {ex.Message}\n"; }
+        catch (Exception ex)
+        {
+            AppendLog($"❌ Chyba registrace úlohy: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void OpenLogFile()
+    {
+        if (File.Exists(LogFileName))
+        {
+            Process.Start(new ProcessStartInfo(LogFileName) { UseShellExecute = true });
+        }
+        else
+        {
+            MessageBox.Show("Soubor s logy zatím neexistuje.", "Informace");
+        }
     }
 
     private async Task StartBackgroundSchedulerAsync()
@@ -84,7 +156,10 @@ public partial class MainViewModel : ObservableObject
         using PeriodicTimer timer = new(TimeSpan.FromMinutes(1));
         while (await timer.WaitForNextTickAsync())
         {
-            if (DateTime.Now.ToString("HH:mm") == ScheduledTime) await ExecuteInternalAsync();
+            if (DateTime.Now.ToString("HH:mm") == ScheduledTime)
+            {
+                await ExecuteInternalAsync();
+            }
         }
     }
 
@@ -96,13 +171,17 @@ public partial class MainViewModel : ObservableObject
 
     private async Task ExecuteInternalAsync()
     {
-        LogOutput += $"\n[{DateTime.Now:HH:mm:ss}] SPUŠTĚN ÚKLID...\n";
+        AppendLog(">>> SPUŠTĚN AUTOMATICKÝ ÚKLID <<<");
+
         foreach (var task in Tasks.Where(t => t.IsEnabled))
         {
             await foreach (var status in _cleanupService.ExecuteCleanupAsync(task))
-                LogOutput += $"{status}\n";
+            {
+                AppendLog(status);
+            }
         }
-        LogOutput += $"[{DateTime.Now:HH:mm:ss}] Hotovo.\n";
+
+        AppendLog(">>> ÚKLID DOKONČEN <<<");
     }
 
     private static bool IsAdmin()

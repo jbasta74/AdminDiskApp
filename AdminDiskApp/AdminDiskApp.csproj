@@ -13,6 +13,9 @@
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 
 		<PublishReadyToRun>true</PublishReadyToRun>
+		<PublishAot>false</PublishAot>
+		<PublishTrimmed>false</PublishTrimmed>
+
 		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
 	</PropertyGroup>
 
