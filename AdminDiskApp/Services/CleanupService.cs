@@ -6,11 +6,11 @@ namespace AdminDiskApp.Services;
 
 public class CleanupService
 {
-    public async IAsyncEnumerable<string> ExecuteCleanupAsync(CleanupTask task)
+    public async IAsyncEnumerable<(string Message, long Bytes)> ExecuteCleanupAsync(CleanupTask task)
     {
         if (!Directory.Exists(task.FolderPath))
         {
-            yield return $"❌ Cesta neexistuje: {task.FolderPath}";
+            yield return ($"❌ Cesta neexistuje: {task.FolderPath}", 0);
             yield break;
         }
 
@@ -22,14 +22,20 @@ public class CleanupService
             var fileInfo = new FileInfo(filePath);
             if (fileInfo.LastWriteTime < threshold)
             {
+                long fileSize = 0;
                 string status;
                 try
                 {
+                    fileSize = fileInfo.Length; //Zjistíme velikost souboru před jeho smazáním
                     await Task.Run(() => fileInfo.Delete());
                     status = $"✔ Smazáno: {fileInfo.Name}";
                 }
-                catch (Exception ex) { status = $"⚠ Nelze smazat {fileInfo.Name}: {ex.Message}"; }
-                yield return status;
+                catch (Exception ex) 
+                { 
+                    status = $"⚠ Nelze smazat {fileInfo.Name}: {ex.Message}";
+                    fileSize = 0; //Pokud se nepodařilo soubor smazat tak jsme nic neušetřili
+                }
+                yield return (status, fileSize);
             }
         }
     }

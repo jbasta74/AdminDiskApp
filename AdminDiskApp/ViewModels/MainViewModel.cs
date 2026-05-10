@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Security.Principal;
-using System.Windows;
 
 using AdminDiskApp.Models;
 using AdminDiskApp.Services;
@@ -114,7 +113,7 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task RunAllTasksAsync() => await ExecuteInternalAsync();
+    private async Task RunAllTasksAsync() => await ExecuteInternalAsync(isManual: true);
 
     [RelayCommand]
     private void RegisterTask()
@@ -179,30 +178,53 @@ public partial class MainViewModel : ObservableObject
         {
             if (DateTime.Now.ToString("HH:mm") == ScheduledTime)
             {
-                await ExecuteInternalAsync();
+                await ExecuteInternalAsync(isManual: false);
             }
         }
     }
 
     private async Task RunAutoAndCloseAsync()
     {
-        await ExecuteInternalAsync();
+        await ExecuteInternalAsync(isManual: false);
         Application.Current.Shutdown();
     }
 
-    private async Task ExecuteInternalAsync()
+    private async Task ExecuteInternalAsync(bool isManual)
     {
-        AppendLog(">>> SPUŠTĚN AUTOMATICKÝ ÚKLID <<<");
+        long totalBytesSaved = 0;
+        // Rozlišení textu podle toho, jak byl úklid spuštěn
+        string header = isManual ? ">>> SPUŠTĚN RUČNÍ ÚKLID <<<" : ">>> SPUŠTĚN AUTOMATICKÝ ÚKLID <<<";
+        AppendLog(header);
 
         foreach (var task in Tasks.Where(t => t.IsEnabled))
         {
-            await foreach (var status in _cleanupService.ExecuteCleanupAsync(task))
+            // Přijímáme zprávu i počet bajtů
+            await foreach (var result in _cleanupService.ExecuteCleanupAsync(task))
             {
-                AppendLog(status);
+                AppendLog(result.Message);
+                totalBytesSaved += result.Bytes;
             }
         }
 
-        AppendLog(">>> ÚKLID DOKONČEN <<<");
+        string formattedSize = FormatBytes(totalBytesSaved);
+        AppendLog($">>> ÚKLID DOKONČEN. Celkem ušetřeno místa: {formattedSize} <<<");
+    }
+    /// <summary>
+    /// Převede počet bajtů na čitelný formát (B, KB, MB, GB, TB).
+    /// </summary>
+    private static string FormatBytes(long bytes)
+    {
+        string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+        double size = bytes;
+        int index = 0;
+
+        while (size >= 1024 && index < suffixes.Length - 1)
+        {
+            size /= 1024;
+            index++;
+        }
+
+        return $"{size:N2} {suffixes[index]}";
     }
 
     private static bool IsAdmin()
