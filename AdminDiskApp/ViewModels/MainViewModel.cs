@@ -18,7 +18,7 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly CleanupService _cleanupService = new();
     private readonly ConfigService _configService = new();
-    private const string LogFileName = "cleanup.log";
+    private static readonly string LogFileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "cleanup.log");
 
     [ObservableProperty] private ObservableCollection<CleanupTask> _tasks = [];
     [ObservableProperty] private string _logOutput = string.Empty;
